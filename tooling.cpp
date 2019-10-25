@@ -1,4 +1,4 @@
-#include "add.h"
+/*#include "add.h"
 
 template <typename T>
 struct Stack <T>* Stack_Create (size_t nelem) {
@@ -44,4 +44,4 @@ T Stack_Pop (Stack <T> * st) {
     st->data[st->n_now--] = 0;
 
     return ret;
-}
+}*/

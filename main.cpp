@@ -2,10 +2,18 @@
 using namespace std;
 
 int main() {
-    Stack <int>* si = {};
-    Stack <double>* sc = {};
+    Stack <int>* si;
 
-    &si = Stack_Create (10);
+    si = Stack_Create <int>(1);
+
+    Stack_Push <int>(si, 9);
+    Stack_Push <int>(si, 12);
+
+    cout << Stack_Pop <int>(si) << endl;
+    cout << Stack_Pop <int>(si) << endl;
+    cout << Stack_Pop <int>(si) << endl;
+
+    Stack_Destroy(si);
 
     return 0;
 }
