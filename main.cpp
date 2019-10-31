@@ -1,19 +1,20 @@
-#include "add.h"
+#include "Stack.h"
+#include "Stack.cpp"
 using namespace std;
 
 int main() {
-    Stack <int>* si;
+    Stack <int> S;
 
-    si = Stack_Create <int>(1);
+    S.Stack_Create (1);
 
-    Stack_Push <int>(si, 9);
-    Stack_Push <int>(si, 12);
+    S.Stack_Push (9);
+    S.Stack_Push (12);
 
-    cout << Stack_Pop <int>(si) << endl;
-    cout << Stack_Pop <int>(si) << endl;
-    cout << Stack_Pop <int>(si) << endl;
+    cout << S.Stack_Pop() << endl;
+    cout << S.Stack_Pop() << endl;
+    //cout << Stack_Pop <int>(si) << endl;
 
-    Stack_Destroy(si);
+    S.Stack_Destroy();
 
     return 0;
 }
