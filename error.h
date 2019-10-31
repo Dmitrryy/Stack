@@ -1,13 +1,17 @@
 #ifndef STACK_2_ERROR_H
 #define STACK_2_ERROR_H
 
-#include <cstdlib>
-
-#define STACK_NOT_FOUND_MR 11
+#define STACK_NOT_FOUND 111
+#define STACK_DATA_NOT_FOUND 121
+#define NEGATIVE_SIZE 131
 #define FAILED_REALLOC 31
-#define STACK_NOT_FOUND_SD 12
-#define STACK_NOT_FOUND_SP 13
-#define FAILED_CREATE_STACK 21
+#define STACK_IS_CREATED 12
 #define REACH_MIN 41
+
+#define CAN_CHANGE 501
+#define CAN_CHANGE_DATA 502
+
+#define CHANGE_HASH -666
+#define HASH_MISMATCH 601
 
 #endif //STACK_2_ERROR_H
