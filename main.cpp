@@ -6,18 +6,13 @@ using namespace std;
 int main() {
     Stack <int> S;
 
-    S.Create (3);
+    S.Create();
 
-    S.Push (9);
-    S.Push (12);
-    S.Push (5);
-    S.Push (432);
-    S.Push(43);
+    for (int i = 0; i < 4096; i++)
+        S.Push(7);
 
-    cout << S.Pop() << endl;
-    cout << S.Pop() << endl;
-    cout << S.Pop() << endl;
-    cout << S.Pop() << endl;
+    for (int i = 4096; i > 0; i--)
+        cout << S.Pop() << endl;
 
     S.Push(10);
 

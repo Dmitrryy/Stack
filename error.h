@@ -14,4 +14,6 @@
 #define CHANGE_HASH -666
 #define HASH_MISMATCH 601
 
+#define ERROR_CHANGE_PROTECT 401
+
 #endif //STACK_2_ERROR_H
