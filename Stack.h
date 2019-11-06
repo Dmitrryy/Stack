@@ -17,27 +17,19 @@
 
 template <typename T>
 class Stack {
-private: unsigned long long m_can1 = CAN;
 private: T* m_data = NULL;
 private: int m_size = 0;
 private: int m_n_now = 0;
-
-private: unsigned long m_hash = 0;
-private: T* m_hash_data = 0;
-private: int m_stat = 0;
-private: PDWORD hm = {};
+private: int m_nom_page = 0;
 
 private: void m_realloc ();
-private: void OK();
+private: void OK(int stat);
 private: void Dump();
-private: unsigned long counter_hash ();
 
 public: void Create ();
 public: void Destroy ();
 public: void Push (T value);
 public: T Pop ();
-
-private: unsigned long long m_can2 = CAN;
 };
 
 
