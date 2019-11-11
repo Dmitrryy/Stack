@@ -1,7 +1,5 @@
 #include "Stack.cpp"
 
-using namespace std;
-
 int main() {
     CREATE_STACK(int, S, 10);
 
@@ -15,7 +13,6 @@ int main() {
 
     for (int i = 0; i < 1018; i++)
         S->Push(10);
-    //S->Push(12);
 
     C->Push('v');
 

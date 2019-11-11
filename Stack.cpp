@@ -1,11 +1,25 @@
 #include "Stack.h"
 #include <cmath>
 
-#define CREATE_STACK(T, name, size); \
- Stack <T>* name = (Stack <T>*) VirtualAlloc (NULL, size * sizeof(T) + sizeof(Stack<T>), MEM_COMMIT, PAGE_READONLY); \
- name->Create(size);
-
 using namespace std;
+
+void terminate (int signum) {
+
+    cout << "an unauthorized attempt to change the contents of Stack was recorded" << endl;
+    cout << "Interrupt signal (" << signum << ") received.\n" << endl;
+
+    // cleanup and close up stuff here
+    // terminate program
+
+    exit(signum);
+}
+
+#define CREATE_STACK(T, name, size); \
+ signal (SIGSEGV, terminate); \
+ Stack <T>* name = (Stack <T>*) VirtualAlloc (NULL, size * sizeof(T) + sizeof(Stack<T>), MEM_COMMIT, PAGE_READONLY); \
+ name->Create(size); \
+
+
 
 /*template <typename T>
 void Stack<T>::m_realloc() {
@@ -26,6 +40,7 @@ void Stack<T>::m_realloc() {
 
 template <typename T>
 void Stack<T>::Create(int size) {
+
     if (size <= 0)
         OK(NEG_SIZE_STACK);
     OK(0);
@@ -67,7 +82,6 @@ void Stack<T>::Destroy() {
 
 template <typename T>
 void Stack<T>::Push(T value) {
-
 #ifndef DISABLE_CHECK_PROTECT
     unsigned long h = 0;
     VirtualProtect(this, PAGE_SIZE * m_nom_page, PAGE_READWRITE, &h);

@@ -26,7 +26,8 @@ private: int m_n_now = 0;
 private: int m_nom_page = 0;
 
 //private: void m_realloc();
-private: void OK(int stat);
+public: void OK(int stat);
+
 private: void Dump();
 
 public: void Create(int size);
