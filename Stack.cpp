@@ -1,42 +1,19 @@
 #include "Stack.h"
 #include <cmath>
+//#include "fixations.cpp"
 
 using namespace std;
 
-void terminate (int signum) {
-
-    cout << "an unauthorized attempt to change the contents of Stack was recorded" << endl;
-    cout << "Interrupt signal (" << signum << ") received.\n" << endl;
-
-    // cleanup and close up stuff here
-    // terminate program
-
-    exit(signum);
-}
+struct StPoint* fixations (LPVOID st, size_t n_page, bool mod);
+void terminate (int signum);
 
 #define CREATE_STACK(T, name, size); \
  signal (SIGSEGV, terminate); \
  Stack <T>* name = (Stack <T>*) VirtualAlloc (NULL, size * sizeof(T) + sizeof(Stack<T>), MEM_COMMIT, PAGE_READONLY); \
  name->Create(size); \
+ fixations ((LPVOID)name, ceil((size * sizeof(T) + sizeof(Stack<T>)) / PAGE_SIZE) + 1, true); \
 
 
-
-/*template <typename T>
-void Stack<T>::m_realloc() {
-	unsigned long h = 0;
-	VirtualProtect(this, PAGE_SIZE * m_nom_page, PAGE_READWRITE, &h);
-	if (h != PAGE_READONLY)
-		OK(ERROR_CHANGE_PROTECT);
-
-	m_nom_page++;
-	Stack <T>* pt = (Stack <T>*)VirtualAlloc(this + 0x10000, PAGE_SIZE, MEM_COMMIT, PAGE_READWRITE);
-	if (pt == NULL)
-		OK(FAILED_REALLOC);
-
-	m_size += (PAGE_SIZE - sizeof(Stack<T>)) / sizeof(T);
-
-	OK(0);
-}*/
 
 template <typename T>
 void Stack<T>::Create(int size) {
@@ -143,20 +120,20 @@ void Stack<T>::OK(int stat) {
         if (this == NULL) {
             cout << endl << "The pointer to Stack is zero (it may not have been created)." << endl
                  << "Try calling the \"Create\" function" << endl;
-            exit(STACK_NOT_FOUND);
+            terminate(STACK_NOT_FOUND);
         }
     }
     else {
         if (stat == NEG_SIZE_STACK) {
             cout << endl << "In the stack creation function (CREATE_STACK(T, name, size);) pass a negative size" << endl
                  << "Cannot create a stack of negative size" << endl;
-            exit(NEG_SIZE_STACK);
+            terminate(NEG_SIZE_STACK);
         }
         if (stat == STACK_IS_CREATED) {
             cout << endl << "Stack is created several times" << endl
                  << "Remove the old before creating a new it" << endl;
             Dump();
-            exit(STACK_IS_CREATED);
+            terminate(STACK_IS_CREATED);
         }
         /*if (stat == FAILED_REALLOC) {
             cout << endl << "failed to increase the size of the Data" << endl;
@@ -166,22 +143,22 @@ void Stack<T>::OK(int stat) {
             //SetConsoleTextAttribute ((HANDLE)GENERIC_WRITE, FOREGROUND_RED);
             cout << endl << "\"Pop\" function is used when Stack is empty" << endl;
             Dump();
-            exit(REACH_MIN);
+            terminate(REACH_MIN);
         }
         if (stat == ERROR_CHANGE_PROTECT) {
             cout << endl << "failed to change protection mode" << endl;
             Dump();
-            exit(ERROR_CHANGE_PROTECT);
+            terminate(ERROR_CHANGE_PROTECT);
         }
         if (stat == ERROR_CHANGE_PROTECT_IN_CR) {
             cout << endl << "failed to change protection mode when creating stack" << endl;
-            exit(ERROR_CHANGE_PROTECT_IN_CR);
+            terminate(ERROR_CHANGE_PROTECT_IN_CR);
         }
         if (stat == REACH_MAX) {
             cout << endl << "\"Push\" function is used when Stack is full" << endl
                  << "it is not possible to put an item in a full Stack" << endl;
             Dump();
-            exit(REACH_MAX);
+            terminate(REACH_MAX);
         }
     }
 }
@@ -209,4 +186,58 @@ void Stack<T>::Dump() {
     for (int i = 1; i < m_size + 1; i++)
         fout << "[" << i << "]  " << m_data[i - 1] << endl;
     fout.close();
+}
+
+
+/** Функции для экстренное очистки памяти **/
+
+struct StPoint {
+    LPVOID ptr;
+    size_t page;
+};
+
+
+void terminate (int signum) {
+
+    if (signum == 11) {
+        cout << "an unauthorized attempt to change the contents of Stack was recorded" << endl;
+        cout << "Interrupt signal (" << signum << ") received.\n" << endl;
+    }
+
+    StPoint* del = {};
+    for (int i = 0; (del = fixations(NULL, 0, false)) != NULL; i++) {
+        unsigned long h = 0;
+        VirtualProtect(del->ptr, PAGE_SIZE * del->page, PAGE_READWRITE, &h);
+        if (h != 0)
+            VirtualFree(del->ptr, 0, MEM_RELEASE);
+    }
+
+    exit(signum);
+}
+
+void my_realloc (StPoint** arr, size_t elem) {
+
+    StPoint* tmp = new StPoint[elem + 10];
+    memcpy(tmp, *arr, elem * sizeof(StPoint));
+    delete [] (*arr);
+    *arr = tmp;
+}
+
+struct StPoint* fixations (LPVOID st, size_t n_page, bool mod) {
+
+    static struct StPoint* add = new StPoint[10];
+    static int i = 0;
+
+    if (mod == true) {
+        if (i % 10 == 9)
+            my_realloc(&add, i);
+
+        add[i].page = n_page;
+        add[i++].ptr = st;
+    } else {
+        if (i <= 0)
+            return NULL;
+        return add + (--i);
+    }
+    return NULL;
 }
