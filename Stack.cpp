@@ -1,20 +1,30 @@
 #include "Stack.h"
 #include <cmath>
-//#include "fixations.cpp"
 
 using namespace std;
 
 struct StPoint* fixations (LPVOID st, size_t n_page, bool mod);
 void terminate (int signum);
 
+/**
+ * исользуется для создания Stack
+ */
 #define CREATE_STACK(T, name, size); \
  signal (SIGSEGV, terminate); \
  Stack <T>* name = (Stack <T>*) VirtualAlloc (NULL, size * sizeof(T) + sizeof(Stack<T>), MEM_COMMIT, PAGE_READONLY); \
  name->Create(size); \
- fixations ((LPVOID)name, ceil((size * sizeof(T) + sizeof(Stack<T>)) / PAGE_SIZE) + 1, true); \
 
 
 
+/**
+ * Функция, создающая Stack
+ * Инициализирует все поля класса(где это требуется) и фиксирует созданный Stack
+ * в функции fixations
+ * @tparam T - тип данных в Stack
+ * @param size - размер Stack. Т.к. Stack на виртуальной памяти, то мин размер = 4кб
+ * (один лист оперативной памяти), т.е если даже передать в функцию значение < 1024(для int)
+ * то будет создан Stack на +-1024 (некоторое место займут поля класса)
+ */
 template <typename T>
 void Stack<T>::Create(int size) {
 
@@ -35,6 +45,8 @@ void Stack<T>::Create(int size) {
 
     m_data = (T*)((char*)this + sizeof(Stack<T>));
 
+    fixations (this, m_nom_page, true);
+
     OK(0);
 
 #ifndef DISABLE_CHECK_PROTECT
@@ -44,6 +56,10 @@ void Stack<T>::Create(int size) {
 #endif
 }
 
+/**
+ * Функция для удаления Stack
+ * @tparam T - тип Stack
+ */
 template <typename T>
 void Stack<T>::Destroy() {
 
@@ -55,8 +71,16 @@ void Stack<T>::Destroy() {
 #endif
 
     VirtualFree(this, 0, MEM_RELEASE);
+
+    fixations(this, 0, false); ///Удаление стэка из числа "активных"
 }
 
+/**
+ * Функция, которая помещает число(или символ, указатель и т.д) в Stack
+ *
+ * @tparam T - тип данных
+ * @param value - число, которое необходимо положить в Stack
+ */
 template <typename T>
 void Stack<T>::Push(T value) {
 #ifndef DISABLE_CHECK_PROTECT
@@ -68,8 +92,6 @@ void Stack<T>::Push(T value) {
 
     OK(0);
 
-    //if (m_n_now >= m_size)
-    //  m_realloc();
     if (m_n_now == m_size)
         OK(REACH_MAX);
 
@@ -83,6 +105,12 @@ void Stack<T>::Push(T value) {
 #endif
 }
 
+/**
+ * Возвращает число, лежащее наверху Stack (удаляя его из Stack)
+ *
+ * @tparam T - тип данных
+ * @return число, лежащее на верху Стэк'а
+ */
 template <typename T>
 T Stack<T>::Pop() {
 
@@ -112,7 +140,12 @@ T Stack<T>::Pop() {
     return ret;
 }
 
-
+/**
+ * функция, проверяющая правильность работы Stack
+ *
+ * @tparam T - тип данных
+ * @param stat - код ошибки (если все нормально, то stat == 0)
+ */
 template <typename T>
 void Stack<T>::OK(int stat) {
 
@@ -127,6 +160,7 @@ void Stack<T>::OK(int stat) {
         if (stat == NEG_SIZE_STACK) {
             cout << endl << "In the stack creation function (CREATE_STACK(T, name, size);) pass a negative size" << endl
                  << "Cannot create a stack of negative size" << endl;
+            Dump();
             terminate(NEG_SIZE_STACK);
         }
         if (stat == STACK_IS_CREATED) {
@@ -135,10 +169,6 @@ void Stack<T>::OK(int stat) {
             Dump();
             terminate(STACK_IS_CREATED);
         }
-        /*if (stat == FAILED_REALLOC) {
-            cout << endl << "failed to increase the size of the Data" << endl;
-            exit(FAILED_REALLOC);
-        }*/
         if (stat == REACH_MIN) {
             //SetConsoleTextAttribute ((HANDLE)GENERIC_WRITE, FOREGROUND_RED);
             cout << endl << "\"Pop\" function is used when Stack is empty" << endl;
@@ -152,6 +182,7 @@ void Stack<T>::OK(int stat) {
         }
         if (stat == ERROR_CHANGE_PROTECT_IN_CR) {
             cout << endl << "failed to change protection mode when creating stack" << endl;
+            Dump();
             terminate(ERROR_CHANGE_PROTECT_IN_CR);
         }
         if (stat == REACH_MAX) {
@@ -189,14 +220,22 @@ void Stack<T>::Dump() {
 }
 
 
-/** Функции для экстренное очистки памяти **/
-
+/**
+ * структура, хранящая необходимою информацию о Stack для его удаления:
+ * ptr - указатель на Stack
+ * page - кол-во страниц в Stack
+ */
 struct StPoint {
     LPVOID ptr;
     size_t page;
 };
 
-
+/**
+ * Освобождает память, которую занимаю все созданные стэки за время работы программы
+ * Вызывается автоматически при возникновении ошибки
+ *
+ * @param signum - код сигнала об ошибке
+ */
 void terminate (int signum) {
 
     if (signum == 11) {
@@ -208,7 +247,7 @@ void terminate (int signum) {
     for (int i = 0; (del = fixations(NULL, 0, false)) != NULL; i++) {
         unsigned long h = 0;
         VirtualProtect(del->ptr, PAGE_SIZE * del->page, PAGE_READWRITE, &h);
-        if (h != 0)
+        if (del->ptr != NULL)
             VirtualFree(del->ptr, 0, MEM_RELEASE);
     }
 
@@ -223,10 +262,25 @@ void my_realloc (StPoint** arr, size_t elem) {
     *arr = tmp;
 }
 
+/**
+ * фиксирует созданные (и не удаленные ранее) структуры Stack
+ * Два режима работы:
+ * при mod == true:
+ * кладет в конец статического массива структур структуру о st
+ *
+ * при mod == false:
+ * удаляет из массива структуру с указателем st
+ * если st == NULL - вытаскивает последнюю в массиве структуру и возвращает на нее указатель (удалив ее из массива)
+ *
+ * @param st - указатель на Stack
+ * @param n_page - кол-во страниц в Stack
+ * @param mod - режим работы программы(флаг)
+ * @return указатель на структуру с информацией о Stack
+ */
 struct StPoint* fixations (LPVOID st, size_t n_page, bool mod) {
 
     static struct StPoint* add = new StPoint[10];
-    static int i = 0;
+    static int i = 0; // указывает на следующий свободный элемент массива
 
     if (mod == true) {
         if (i % 10 == 9)
@@ -234,10 +288,20 @@ struct StPoint* fixations (LPVOID st, size_t n_page, bool mod) {
 
         add[i].page = n_page;
         add[i++].ptr = st;
+        return NULL;
     } else {
-        if (i <= 0)
-            return NULL;
-        return add + (--i);
+        if (st == NULL && i > 0) //если st == NULL возвращается последний лежащий элемент
+            return add + (--i);
+        else
+            for (int k = i - 1; k >= 0; k--) { //иначе ищется переданная структура в базе данных и вытаскивается от туда
+                if (add[k].ptr == st) {
+                    memcpy(add + k, add + k + 1, (i - k) * sizeof(StPoint*)); //Закрытие "дырки" после удаления
+                    --i;
+                    add[i].page = 0;
+                    add[i].ptr = NULL;
+                    return NULL;
+                }
+            }
     }
-    return NULL;
+    return NULL; //возвращается NULL если в базе пусто (илиесли в базу добавили элемент)
 }

@@ -1,36 +1,65 @@
 #include "Stack.cpp"
 
+/**
+ * @mainpage STACK
+ * \brief Структура данных "Stack"
+ * \author Дроздов Д.А.
+ * \version 3.2
+ * \date ноябрь 2019 года
+ *
+ * К функциям работы со Stack относятся:
+ * void Create(int size);
+ * void Destroy();
+ * void Push(T value);
+ * T Pop();
+ *
+ * Ниже приведен пример исспользования Stack. (калькулятор (польский))
+ * Пример ввода: 8 9 + 1 7 - * =
+ * Результат: -102
+ */
 int main() {
-    CREATE_STACK(int, S, 10);
 
-    CREATE_STACK(char, C, 4);
+    char c = 0;
+    int s = 0, a = 0, b = 0;
 
-    //CREATE_STACK(double, F, 4);
+    CREATE_STACK(int, St, 40);
 
-    //CREATE_STACK(unsigned long long, LLD, 4);
+    cin >> c;
 
-    //CREATE_STACK(char*, CP, 4);
+    St->Push(c - '0');
 
-    //for (int i = 0; i < 1018; i++)
-        //S->Push(10);
+    for ( ; ; ) {
+        cin >> c;
 
-    //C->Push('v');
+        if (c == '=')
+            break;
 
-    S->Destroy();
+        if (c >= '0' && c <= '9')
+            St->Push(c - '0');
 
-    //F->Push(981.2138912);
+        if (c == '+') {
+            a = St->Pop();
+            b = St->Pop();
+            s = a + b;
+            St->Push(s);
+        }
 
-    //LLD->Push(8712369127821098301);
+        if (c == '-') {
+            b = St->Pop();
+            a = St->Pop();
+            s = a - b;
+            St->Push(s);
+        }
 
-    cout << C->Pop() << endl;
-    //cout << C->Pop() << endl;
-    //cout << F->Pop() << endl;
-    //cout << LLD->Pop() << endl;
+        if (c == '*') {
+            a = St->Pop();
+            b = St->Pop();
+            s = a * b;
+            St->Push(s);
+        }
+    }
+    cout << s << endl;
 
-    S->Destroy();
-    //C->Destroy();
-    //F->Destroy();
-    //LLD->Destroy();
-
+    St->Destroy();
     return 0;
 }
